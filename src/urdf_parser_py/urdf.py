@@ -1,4 +1,6 @@
 from os import name
+
+from sympy import true
 from urdf_parser_py.xml_reflection.basics import *
 import urdf_parser_py.xml_reflection as xmlr
 
@@ -208,7 +210,7 @@ xmlr.reflect(Visual, tag='visual', params=[
     xmlr.Attribute('name', str, False),
     origin_element,
     xmlr.Element('geometry', 'geometric'),
-    xmlr.Element('material', LinkMaterial, False)
+    xmlr.Element('material', Material, False)
 ])
 
 
@@ -311,7 +313,7 @@ xmlr.reflect(SafetyController, tag='safety_controller', params=[
 
 class Joint(xmlr.Object):
     TYPES = ['unknown', 'revolute', 'continuous', 'prismatic',
-             'floating', 'planar', 'fixed']
+             'floating', 'planar', 'fixed', 'ball']
 
     def __init__(self, name=None, parent=None, child=None, joint_type=None,
                  axis=None, origin=None,
@@ -483,7 +485,7 @@ xmlr.add_type('transmission',
                                     [Transmission, PR2Transmission]))
 
 
-class Plugin(xmlr.Object):
+class ROSControlPlugin(xmlr.Object):
     def __init__(self, name='gazebo_ros_control', filename='libgazebo_ros_control.so', robotSimType='gazebo_ros_control/DefaultRobotHWSim', legacyModeNS='true',
                  robotNamespace='/'):
         self.name = name
@@ -493,7 +495,7 @@ class Plugin(xmlr.Object):
         self.legacyModeNS = legacyModeNS
 
 
-xmlr.reflect(Plugin, tag='plugin', params=[
+xmlr.reflect(ROSControlPlugin, tag='plugin', params=[
     xmlr.Attribute('name', str),
     xmlr.Attribute('filename', str),
     xmlr.Element('robotNamespace', str),
@@ -501,13 +503,225 @@ xmlr.reflect(Plugin, tag='plugin', params=[
     xmlr.Element('legacyModeNS', str)
 ])
 
+
+class GazeboLinkProperty(xmlr.Object):
+    def __init__(self,name='gazebo',frame=''):
+        self.reference = frame
+        self.material = 'Gazebo/Red'
+        self.kinematic = '1'
+        self.gravity = 'false'
+        self.enable_wind = 'false'
+
+xmlr.reflect(GazeboLinkProperty, tag='gazebo', params=[
+    xmlr.Attribute('reference', str),
+    xmlr.Element('material', str),
+    xmlr.Element('kinematic', str),
+    xmlr.Element('gravity', str),
+    xmlr.Element('enable_wind', str),
+])
+
+
 class Gazebo(xmlr.Object):
     def __init__(self,name='gazebo',plugin=''):
         self.plugin = plugin
 
 xmlr.reflect(Gazebo, tag='gazebo', params=[
-    xmlr.Element('plugin', Plugin),
+    xmlr.Element('plugin', ROSControlPlugin),
 ])
+
+
+class PubmerPlugin(xmlr.Object):
+    def __init__(self, name='gazebo_ros_bumper_controller', filename='libgazebo_ros_bumper.so', 
+                 frameName='bumper',bumperTopicName='bumper_states', update_rate='100',robotNamespace='sim_api'):
+        self.name = name
+        self.filename = filename
+        self.bumperTopicName = bumperTopicName
+        self.frameName = frameName
+        self.updateRate = update_rate
+        self.robotNamespace = robotNamespace
+
+
+xmlr.reflect(PubmerPlugin, tag='plugin', params=[
+    xmlr.Attribute('name', str),
+    xmlr.Attribute('filename', str),
+    xmlr.Element('bumperTopicName', str),
+    xmlr.Element('frameName', str),
+    xmlr.Element('updateRate', str),
+    xmlr.Element('robotNamespace', str)
+])
+
+
+
+class Contact(xmlr.Object):
+    def __init__(self, collision='hook_link_collision'):
+        self.collision = collision
+  
+xmlr.reflect(Contact, tag='contact', params=[
+    xmlr.Element('collision', str)
+])
+
+class Sensor(xmlr.Object):
+    def __init__(self, name="contacts", stype="contact", plugin='', contact='', always_on='true',
+                 visualize = 'true',update_rate='1000'):
+        self.name = name
+        self.type = stype
+        self.plugin = plugin
+        self.contact = contact
+        self.visualize = visualize
+        self.always_on = always_on
+        self.update_rate = update_rate
+
+xmlr.reflect(Sensor, tag='sensor', params=[
+    xmlr.Attribute('name', str),
+    xmlr.Attribute('type', str),
+    xmlr.Element('plugin', PubmerPlugin),
+    xmlr.Element('contact', Contact),
+    xmlr.Element('visualize', str),
+    xmlr.Element('always_on', str),
+    xmlr.Element('update_rate', str),
+])
+
+
+class ContactSensor(xmlr.Object):
+    def __init__(self,name='gazebo',sensor=''):
+        self.reference = 'hook_link'
+        self.sensor = sensor
+        # self.material = 'Gazebo/Red'
+        # self.mu1 = '0.1'
+        # self.mu2 = '0.1'
+        # self.gravity = "true"
+        # self.selfCollide = "false"
+
+xmlr.reflect(ContactSensor, tag='gazebo', params=[
+    xmlr.Attribute('reference', str),
+    xmlr.Element('sensor', Sensor),
+    # xmlr.Element('material', str),
+    # xmlr.Element('mu1', str),
+    # xmlr.Element('mu2', str),
+    # xmlr.Element('gravity', str),
+    # xmlr.Element('selfCollide', str)
+])
+
+
+
+class CameraPlugin(xmlr.Object):
+    def __init__(self, name='gazebo_camera', filename='libgazebo_ros_camera.so', 
+                 updateRate='30',cameraName='camera', frameName='camera_link',
+                 imageTopicName = 'image', cameraInfoTopicName='camera_info',robotNamespace='',
+                 distortionK1='0.0',distortionK2='0.0',distortionK3='0.0',distortionT1='0.0',distortionT2='0.0'):
+        self.name = name
+        self.filename = filename
+        self.always_on = 'true'
+        self.cameraName = cameraName
+        self.imageTopicName = imageTopicName
+        self.cameraInfoTopicName = cameraInfoTopicName
+        self.robotNamespace = robotNamespace
+        self.frameName = frameName
+        self.updateRate = updateRate
+        self.hackBaseline = 0.07
+        self.distortionK1 = distortionK1
+        self.distortionK2 = distortionK2
+        self.distortionK3 = distortionK3
+        self.distortionT1 = distortionT1
+        self.distortionT2 = distortionT2
+
+xmlr.reflect(CameraPlugin, tag='plugin', params=[
+    xmlr.Attribute('name', str),
+    xmlr.Attribute('filename', str),
+    xmlr.Element('always_on', str),
+    xmlr.Element('robotNamespace', str),
+    xmlr.Element('imageTopicName', str),
+    xmlr.Element('cameraName', str),
+    xmlr.Element('updateRate', str),
+    xmlr.Element('hackBaseline', str),
+    xmlr.Element('distortionK1', str),
+    xmlr.Element('distortionK2', str),
+    xmlr.Element('distortionK3', str),
+    xmlr.Element('distortionT1', str),
+    xmlr.Element('distortionT2', str)
+])
+
+class Image(xmlr.Object):
+    def __init__(self, width="1920", height="1080", format='R8G8B8'):
+        self.width = width
+        self.height = height
+        self.format = format
+
+
+xmlr.reflect(Image, tag='image', params=[
+    xmlr.Element('width', str),
+    xmlr.Element('height', str),
+    xmlr.Element('format', str),
+])
+
+
+class Clip(xmlr.Object):
+    def __init__(self, near="0.05", far="300"):
+        self.near = near
+        self.far = far
+
+xmlr.reflect(Clip, tag='clip', params=[
+    xmlr.Element('near', str),
+    xmlr.Element('far', str),
+])
+
+
+class Noise(xmlr.Object):
+    def __init__(self, type="gaussian", mean="0.0", stddev='0.007'):
+        self.type = type
+        self.mean = mean
+        self.stddev = stddev
+
+xmlr.reflect(Noise, tag='noise', params=[
+    xmlr.Element('type', str),
+    xmlr.Element('mean', str),
+    xmlr.Element('stddev', str),
+])
+
+class Camera(xmlr.Object):
+    def __init__(self, name="cam1", image='', clip='', noise=''):
+        self.name = name
+        self.image = image
+        self.clip = clip
+        self.noise = noise
+
+
+xmlr.reflect(Camera, tag='camera', params=[
+    xmlr.Attribute('name', str),
+    xmlr.Element('image', Image),
+    xmlr.Element('clip', Clip),
+    xmlr.Element('noise', Noise),
+])
+
+
+class CameraGroup(xmlr.Object):
+    def __init__(self, name="camera_node", stype="camera", plugin='', camera='', update_rate = '30'):
+        self.name = name
+        self.type = stype
+        self.plugin = plugin
+        self.camera = camera
+        self.update_rate = update_rate
+
+xmlr.reflect(CameraGroup, tag='sensor', params=[
+    xmlr.Attribute('name', str),
+    xmlr.Attribute('type', str),
+    xmlr.Element('plugin', CameraPlugin),
+    xmlr.Element('camera', Camera),
+])
+
+class CameraSensor(xmlr.Object):
+    def __init__(self, reference="camera", sensor=""):
+        self.reference = reference
+        self.sensor = sensor
+
+xmlr.reflect(CameraSensor, tag='gazebo', params=[
+    xmlr.Attribute('reference', str),
+    xmlr.Element('sensor', CameraGroup),
+])
+
+
+
+
 
 class Robot(xmlr.Object):
     SUPPORTED_VERSIONS = ["1.0"]
