@@ -1,8 +1,26 @@
 # urdf_parser_py
 
-**
-增加了Plugin对象，方便快速gazebo仿真
-以下为原本代码的使用说明**
+*  增加了Plugin对象，方便快速gazebo仿真,以下为原本代码的使用说明
+*  Examples:
+	* LinkProperty
+	link_property = urdf.GazeboLinkProperty(frame="hook_link")
+	robot.add_aggregate('gazebo', link_property)  
+	* ROS Control Plugin
+	gazebo = urdf.Gazebo(plugin=urdf.ROSControlPlugin())
+	robot.add_aggregate('gazebo', gazebo)
+    * Contact Sensor
+	contact_sensor = urdf.ContactSensor(sensor= urdf.Sensor(plugin=urdf.PubmerPlugin(),contact = urdf.Contact()))
+	robot.add_aggregate('gazebo', contact_sensor)  
+	* Camera Sensor
+	camera_sensor = urdf.CameraSensor(reference='cam_world_link',
+	sensor=urdf.CameraGroup(
+		plugin=urdf.CameraPlugin(robotNamespace="world"),
+		camera=urdf.Camera(
+			image=urdf.Image(),
+			clip=urdf.Clip(),
+			noise=urdf.Noise()
+		)
+	)
 
 ## Development Setup
 
