@@ -505,9 +505,9 @@ xmlr.reflect(ROSControlPlugin, tag='plugin', params=[
 
 
 class GazeboLinkProperty(xmlr.Object):
-    def __init__(self,name='gazebo',frame=''):
+    def __init__(self,name='gazebo',frame='',material='Gazebo/Red'):
         self.reference = frame
-        self.material = 'Gazebo/Red'
+        self.material = material
         self.kinematic = '1'
         self.gravity = 'false'
         self.enable_wind = 'false'
@@ -520,6 +520,42 @@ xmlr.reflect(GazeboLinkProperty, tag='gazebo', params=[
     xmlr.Element('enable_wind', str),
 ])
 
+class GazeboLinkPropertyColor(xmlr.Object):
+    def __init__(self,name='gazebo',frame='',material='Gazebo/Yellow'):
+        self.reference = frame
+        self.material = material
+        self.kinematic = '1'
+        self.gravity = 'true'
+        self.enable_wind = 'true'
+
+xmlr.reflect(GazeboLinkPropertyColor, tag='gazebo', params=[
+    xmlr.Attribute('reference', str),
+    xmlr.Element('material', str),
+    xmlr.Element('kinematic', str),
+    xmlr.Element('gravity', str),
+    xmlr.Element('enable_wind', str),
+])
+
+
+class Gravitycompensation(xmlr.Object):
+    def __init__(self,name='gravity_compensation',filename='libGravityCompensationPlugin.so',uri='robot'):
+        self.name = name
+        self.filename = filename
+        # self.uri = uri
+
+xmlr.reflect(Gravitycompensation, tag='plugin', params=[
+    xmlr.Attribute('name', str),
+    xmlr.Attribute('filename', str),
+    # xmlr.Element('uri', str),
+])
+
+class Gazebo(xmlr.Object):
+    def __init__(self,name='gazebo',plugin=''):
+        self.plugin = plugin
+
+xmlr.reflect(Gazebo, tag='gazebo', params=[
+    xmlr.Element('plugin', Gravitycompensation),
+])
 
 class Gazebo(xmlr.Object):
     def __init__(self,name='gazebo',plugin=''):
